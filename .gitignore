@@ -1,0 +1,16 @@
+# Godot 4+ specific ignores
+.godot/
+
+# Godot-specific ignores
+.import/
+
+# Mono-specific ignores
+.mono/
+mono_crash.*.json
+
+# IDEs
+.vscode/
+
+# Misc
+.DS_Store
+.Thumbs
