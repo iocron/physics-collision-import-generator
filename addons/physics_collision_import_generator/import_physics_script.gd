@@ -7,9 +7,12 @@ extends EditorScenePostImport
 func _post_import(scene):
 	# Configuration - modify these values as needed
 	var create_physics = true  # Set to true to enable physics generation
-	var physics_shape_type = 0  # 0=Trimesh, 1=Convex, 2=Box, 3=Sphere, 4=Capsule
 	var physics_layer = 1  # Collision layer
 	var physics_mask = 1   # Collision mask
+	
+	# Read shape type from import settings (default to Trimesh if not specified)
+	# Note: Import parameters are set through the .import file and accessed through get_source_file() metadata
+	var physics_shape_type = _get_physics_shape_type()  # 0=Trimesh, 1=Convex, 2=Box, 3=Sphere, 4=Capsule
 	
 	if create_physics:
 		print("Generating physics for imported scene: ", get_source_file())
@@ -144,28 +147,69 @@ func _add_physics_to_mesh(mesh_instance: MeshInstance3D, physics_shape_type: int
 			collision_shape.owner = original_owner
 		
 		print("Added physics to: ", mesh_instance.name, " with transform: ", static_body.transform)
+	else:
+		print("Skipped physics for: ", mesh_instance.name, " - no valid collision shape could be created")
+		# Still set owners for the StaticBody3D and mesh
+		if original_owner:
+			static_body.owner = original_owner
+			mesh_instance.owner = original_owner
 
 func _create_physics_shape(mesh: Mesh, shape_type: int) -> Shape3D:
+	# Validate mesh before creating shapes
+	if not mesh:
+		print("  - Warning: Null mesh, skipping physics shape creation")
+		return null
+	
+	var aabb = mesh.get_aabb()
+	if aabb.size.length() < 0.001:  # Very small or zero-sized mesh
+		print("  - Warning: Mesh has no size, skipping physics shape creation")
+		return null
+	
 	match shape_type:
 		0: # Trimesh
-			return mesh.create_trimesh_shape()
+			var trimesh_shape = mesh.create_trimesh_shape()
+			if not trimesh_shape:
+				print("  - Warning: Failed to create trimesh shape, falling back to convex")
+				return mesh.create_convex_shape()
+			return trimesh_shape
 		1: # Convex
-			return mesh.create_convex_shape()
+			var convex_shape = mesh.create_convex_shape()
+			if not convex_shape:
+				print("  - Warning: Failed to create convex shape, falling back to box")
+				var box_shape = BoxShape3D.new()
+				box_shape.size = aabb.size
+				return box_shape
+			return convex_shape
 		2: # Box
-			var aabb = mesh.get_aabb()
 			var box_shape = BoxShape3D.new()
 			box_shape.size = aabb.size
 			return box_shape
 		3: # Sphere
-			var aabb = mesh.get_aabb()
 			var sphere_shape = SphereShape3D.new()
 			sphere_shape.radius = max(aabb.size.x, max(aabb.size.y, aabb.size.z)) / 2.0
 			return sphere_shape
 		4: # Capsule
-			var aabb = mesh.get_aabb()
 			var capsule_shape = CapsuleShape3D.new()
 			capsule_shape.radius = max(aabb.size.x, aabb.size.z) / 2.0
 			capsule_shape.height = aabb.size.y
 			return capsule_shape
 		_:
 			return mesh.create_trimesh_shape()
+
+# Helper function to read physics shape type from import settings
+func _get_physics_shape_type() -> int:
+	var source_file = get_source_file()
+	var import_file = source_file + ".import"
+	
+	if not FileAccess.file_exists(import_file):
+		print("Import file not found, defaulting to Trimesh: ", import_file)
+		return 0  # Default to Trimesh
+	
+	var config = ConfigFile.new()
+	if config.load(import_file) != OK:
+		print("Failed to load import file, defaulting to Trimesh: ", import_file)
+		return 0  # Default to Trimesh
+	
+	var shape_type = config.get_value("params", "physics_shape_type", 0)
+	print("Read physics shape type from import settings: ", shape_type)
+	return shape_type
