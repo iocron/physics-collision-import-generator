@@ -1,13 +1,15 @@
 @tool
 extends EditorPlugin
 
+const PhysicsBase = preload("res://addons/physics_collision_import_generator/import_physics_base.gd")
+
 var physics_dock
 
 func _enter_tree():
 	# Add the physics import dock panel
 	physics_dock = preload("res://addons/physics_collision_import_generator/physics_import_dock.gd").new()
 	physics_dock.plugin_reference = self
-	add_control_to_dock(DOCK_SLOT_LEFT_UR, physics_dock)
+	add_control_to_dock(DOCK_SLOT_LEFT_BR, physics_dock) # DOCK_SLOT_LEFT_UR
 	print("Physics & Collision Import Generator enabled")
 	print("Check the Physics Import dock panel to apply physics import scripts to GLB/GLTF files")
 
@@ -47,10 +49,10 @@ func set_physics_import_script(file_path: String, shape_type: int = 0):
 	if not config.has_section_key("remap", "type"):
 		config.set_value("remap", "type", "PackedScene")
 	
-	# Only set the import script and physics shape type - don't touch other settings
-	var script_path = "res://addons/physics_collision_import_generator/import_physics_script.gd"
+	# Set the shape-specific import script - no need for physics_shape_type parameter
+	var script_path = _get_script_path_for_shape_type(shape_type)
 	config.set_value("params", "import_script/path", script_path)
-	config.set_value("params", "physics_shape_type", shape_type)
+	print("Using import script: ", script_path, " for shape type: ", shape_type)
 	
 	# Save the configuration
 	var error = config.save(import_settings_path)
@@ -120,3 +122,13 @@ func remove_physics_import_script(file_path: String):
 	filesystem.reimport_files([file_path])
 	
 	print("Successfully forced complete reimport for: ", file_path)
+
+# Helper function to get the correct import script path for a shape type
+func _get_script_path_for_shape_type(shape_type: int) -> String:
+	match shape_type:
+		PhysicsBase.ShapeType.TRIMESH: return "res://addons/physics_collision_import_generator/import_physics_trimesh.gd"
+		PhysicsBase.ShapeType.CONVEX: return "res://addons/physics_collision_import_generator/import_physics_convex.gd"
+		PhysicsBase.ShapeType.BOX: return "res://addons/physics_collision_import_generator/import_physics_box.gd"
+		PhysicsBase.ShapeType.SPHERE: return "res://addons/physics_collision_import_generator/import_physics_sphere.gd"
+		PhysicsBase.ShapeType.CAPSULE: return "res://addons/physics_collision_import_generator/import_physics_capsule.gd"
+		_: return "res://addons/physics_collision_import_generator/import_physics_trimesh.gd"  # Default fallback
