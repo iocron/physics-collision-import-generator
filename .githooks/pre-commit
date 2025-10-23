@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Create Copies for Godot Addon
+cp README.md addons/physics_collision_import_generator/README.md
+cp LICENSE.md addons/physics_collision_import_generator/LICENSE.md
+
+git add addons/physics_collision_import_generator/README.md
+git add addons/physics_collision_import_generator/LICENSE.md
+
