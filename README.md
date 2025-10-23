@@ -10,24 +10,21 @@ This Godot plugin automatically generates physics bodies and collision shapes du
 
 ## Usage
 
-1. Import a GLB or GLTF file into your project
-2. Select the file in the FileSystem dock
-3. In the Import tab, select "Scene (with Physics Options)" as the importer
-4. Configure the physics options:
-   - **Physics > Create Physics Bodies**: Enable automatic physics generation
-   - **Physics > Shape Type**: Choose between Trimesh, Convex, Box, Sphere, or Capsule
-   - **Physics > Collision Layer**: Set the collision layer for the generated physics bodies
-   - **Physics > Collision Mask**: Set the collision mask for the generated physics bodies
-5. Use the "With Physics" preset for quick setup
-6. Click "Reimport" to apply the changes
+1. Import GLB or GLTF files into your project
+2. Open the **"Collision Import Generator"** dock panel (near the FileSystem dock)
+3. Select one or more files from the list
+4. Choose a physics shape type from the dropdown
+5. Click **"Apply Physics"** to add physics, or **"Remove Physics"** to remove it
+
+- Files with physics applied are shown in green
+- Use the search filter to find specific files
 
 ## Features
 
 - Automatically creates StaticBody3D nodes with CollisionShape3D for all MeshInstance3D nodes
 - Multiple physics shape types supported
-- Configurable collision layers
 - Preserves existing scene structure
-- Only shows physics options when the main option is enabled
+- Uses Godot's import script system to automatically process scenes during import
 
 ## Shape Types
 
@@ -41,4 +38,4 @@ This Godot plugin automatically generates physics bodies and collision shapes du
 
 - Physics bodies are created as StaticBody3D by default
 - Existing StaticBody3D nodes are reused when possible
-- The plugin works by post-processing the imported scene after the standard GLTF import
+- The plugin sets the **Import Script Path** in the file's `.import` configuration to automatically process scenes during import
