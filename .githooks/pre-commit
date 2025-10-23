@@ -1,9 +1,25 @@
 #!/bin/sh
+set -e # Exit on error
 
-# Create Copies for Godot Addon
-cp README.md addons/physics_collision_import_generator/README.md
-cp LICENSE.md addons/physics_collision_import_generator/LICENSE.md
+# Copy LICENSE+README to Addon(s) Folders for Godot Convention
+for SUBFOLDER in addons/*/; do
+  DEST="$SUBFOLDER/README.md"
+  if [ -f README.md ]; then
+    cp README.md "$DEST"
+    git add "$DEST"
+  fi
 
-git add addons/physics_collision_import_generator/README.md
-git add addons/physics_collision_import_generator/LICENSE.md
+  DEST_LICENSE="$SUBFOLDER/LICENSE.md"
+  if [ -f LICENSE.md ]; then
+    cp LICENSE.md "$DEST_LICENSE"
+    git add "$DEST_LICENSE"
+  fi
+
+  DEST_LICENSE="$SUBFOLDER/LICENSE"
+  if [ -f LICENSE ]; then
+    cp LICENSE "$DEST_LICENSE"
+    git add "$DEST_LICENSE"
+  fi
+done
+
 
