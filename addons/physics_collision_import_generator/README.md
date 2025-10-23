@@ -1,4 +1,4 @@
-# Physics & Collision Import Generator
+# Physics Collision Import Generator
 
 This Godot plugin automatically generates physics bodies and collision shapes during the import of 3D scenes from GLB/GLTF files, with potential support for more formats in the future.
 
@@ -6,7 +6,7 @@ This Godot plugin automatically generates physics bodies and collision shapes du
 
 1. Copy the `physics_collision_import_generator` folder to your project's `addons/` directory
 2. Go to Project Settings → Plugins
-3. Enable the "Physics & Collision Import Generator" plugin
+3. Enable the "Physics Collision Import Generator" plugin
 
 ## Usage
 

@@ -28,7 +28,7 @@ func _setup_ui():
 	
 	# Title label
 	# var title = Label.new()
-	# title.text = "Physics Import Helper"
+	# title.text = "Physics Collision Import Generator"
 	# title.add_theme_stylebox_override("normal", _create_header_style())
 	# vbox.add_child(title)
 	

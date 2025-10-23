@@ -10,14 +10,14 @@ func _enter_tree():
 	physics_dock = preload("res://addons/physics_collision_import_generator/physics_import_dock.gd").new()
 	physics_dock.plugin_reference = self
 	add_control_to_dock(DOCK_SLOT_LEFT_BR, physics_dock) # DOCK_SLOT_LEFT_UR
-	print("Physics & Collision Import Generator enabled")
-	print("Check the Physics Import dock panel to apply physics import scripts to GLB/GLTF files")
+	print("Physics Collision Import Generator enabled")
+	print("Check the Physics Collision Import dock panel to apply physics import scripts to GLB/GLTF files")
 
 func _exit_tree():
 	if physics_dock:
 		remove_control_from_docks(physics_dock)
 		physics_dock = null
-	print("Physics & Collision Import Generator disabled")
+	print("Physics Collision Import Generator disabled")
 
 # Helper function to set import script and re-import a file
 func set_physics_import_script(file_path: String, shape_type: int = 0):
