@@ -1,5 +1,5 @@
 @tool
-extends "res://addons/physics_collision_import_generator/import_physics_base.gd"
+extends "res://addons/physics_collision_import_generator/import_scripts/import_physics_base.gd"
 
 # Physics import script for Box collision shapes
 

@@ -1,7 +1,7 @@
 @tool
 extends EditorPlugin
 
-const PhysicsBase = preload("res://addons/physics_collision_import_generator/import_physics_base.gd")
+const PhysicsBase = preload("res://addons/physics_collision_import_generator/import_scripts/import_physics_base.gd")
 
 var physics_dock
 
@@ -126,9 +126,9 @@ func remove_physics_import_script(file_path: String):
 # Helper function to get the correct import script path for a shape type
 func _get_script_path_for_shape_type(shape_type: int) -> String:
 	match shape_type:
-		PhysicsBase.ShapeType.TRIMESH: return "res://addons/physics_collision_import_generator/import_physics_trimesh.gd"
-		PhysicsBase.ShapeType.CONVEX: return "res://addons/physics_collision_import_generator/import_physics_convex.gd"
-		PhysicsBase.ShapeType.BOX: return "res://addons/physics_collision_import_generator/import_physics_box.gd"
-		PhysicsBase.ShapeType.SPHERE: return "res://addons/physics_collision_import_generator/import_physics_sphere.gd"
-		PhysicsBase.ShapeType.CAPSULE: return "res://addons/physics_collision_import_generator/import_physics_capsule.gd"
-		_: return "res://addons/physics_collision_import_generator/import_physics_trimesh.gd"  # Default fallback
+		PhysicsBase.ShapeType.TRIMESH: return "res://addons/physics_collision_import_generator/import_scripts/import_physics_trimesh.gd"
+		PhysicsBase.ShapeType.CONVEX: return "res://addons/physics_collision_import_generator/import_scripts/import_physics_convex.gd"
+		PhysicsBase.ShapeType.BOX: return "res://addons/physics_collision_import_generator/import_scripts/import_physics_box.gd"
+		PhysicsBase.ShapeType.SPHERE: return "res://addons/physics_collision_import_generator/import_scripts/import_physics_sphere.gd"
+		PhysicsBase.ShapeType.CAPSULE: return "res://addons/physics_collision_import_generator/import_scripts/import_physics_capsule.gd"
+		_: return "res://addons/physics_collision_import_generator/import_scripts/import_physics_trimesh.gd"  # Default fallback

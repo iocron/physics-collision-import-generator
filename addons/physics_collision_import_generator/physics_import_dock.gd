@@ -3,7 +3,7 @@ extends Control
 
 # Custom dock for physics import functionality
 
-const PhysicsBase = preload("res://addons/physics_collision_import_generator/import_physics_base.gd")
+const PhysicsBase = preload("res://addons/physics_collision_import_generator/import_scripts/import_physics_base.gd")
 
 var plugin_reference
 var file_list: ItemList
