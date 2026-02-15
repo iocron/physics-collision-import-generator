@@ -205,6 +205,7 @@ func _setup_ui():
 func _refresh_file_list():
 	# Get all GLB/GLTF files in the project and store them
 	all_files = _find_gltf_files("res://")
+	all_files.sort()
 	_update_filtered_list()
 
 func _update_filtered_list():
