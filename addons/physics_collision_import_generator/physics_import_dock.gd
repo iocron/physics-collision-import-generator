@@ -110,18 +110,13 @@ func _setup_ui():
 	add_child(vbox)
 	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	
-	# Shape type selection
-	# shape_type_label = Label.new()
-	# shape_type_label.text = "Physics Shape Type:"
-	# vbox.add_child(shape_type_label)
-	
 	shape_type_option = OptionButton.new()
 	shape_type_option.add_item("SELECT a physics shape type to apply:", PhysicsBase.ShapeType.NONE)
-	shape_type_option.add_item("Trimesh (Exact, but Slow)", PhysicsBase.ShapeType.TRIMESH)
-	shape_type_option.add_item("Convex (Optimized)", PhysicsBase.ShapeType.CONVEX)
 	shape_type_option.add_item("Box (Simple, Fastest)", PhysicsBase.ShapeType.BOX)
-	shape_type_option.add_item("Sphere (Simple, Fastest)", PhysicsBase.ShapeType.SPHERE)
 	shape_type_option.add_item("Capsule (Simple, Fastest)", PhysicsBase.ShapeType.CAPSULE)
+	shape_type_option.add_item("Convex (Optimized)", PhysicsBase.ShapeType.CONVEX)
+	shape_type_option.add_item("Sphere (Simple, Fastest)", PhysicsBase.ShapeType.SPHERE)
+	shape_type_option.add_item("Trimesh (Exact, but Slow)", PhysicsBase.ShapeType.TRIMESH)
 	shape_type_option.selected = 0  # Default to None/Unknown
 	shape_type_option.item_selected.connect(_on_shape_type_changed)
 	vbox.add_child(shape_type_option)
