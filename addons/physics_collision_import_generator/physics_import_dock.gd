@@ -224,7 +224,7 @@ func _update_filtered_list():
 	var grouped: Dictionary = {}
 	for file_path in all_files:
 		var file_name = file_path.get_file()
-		if filter_text != "" and not file_name.to_lower().contains(filter_text):
+		if filter_text != "" and not file_path.to_lower().contains(filter_text):
 			continue
 		var dir_path = file_path.get_base_dir()
 		if dir_path not in grouped:
