@@ -9,6 +9,7 @@ var plugin_reference
 var file_list: ItemList
 var refresh_button: Button
 var apply_button: Button
+var apply_all_button: Button # Added
 var remove_button: Button
 var shape_type_option: OptionButton
 var shape_type_label: Label
@@ -78,61 +79,49 @@ func _setup_ui():
 	spacer.custom_minimum_size = Vector2(0, 4)  # Reduced spacing
 	vbox.add_child(spacer)
 	
-	# File list (expandable)
-	file_list = ItemList.new()
-	file_list.custom_minimum_size = Vector2(0, 200)  # Increased minimum height
-	file_list.size_flags_vertical = Control.SIZE_EXPAND_FILL  # Make it expand to fill available space
-	file_list.allow_reselect = true  # Allow clicking the same item again
-	file_list.auto_height = true  # Auto-adjust height for content
-	vbox.add_child(file_list)
+	# First row of buttons
+	var hbox1 = HBoxContainer.new()
+	vbox.add_child(hbox1)
 	
-	# Buttons container
-	var hbox = HBoxContainer.new()
-	vbox.add_child(hbox)
-	
-	# Refresh button
 	refresh_button = Button.new()
-	refresh_button.text = "Refresh"
+	refresh_button.text = "Refresh List"
+	refresh_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	refresh_button.pressed.connect(_on_refresh_pressed)
-	hbox.add_child(refresh_button)
+	hbox1.add_child(refresh_button)
 	
-	# Apply physics button
-	apply_button = Button.new()
-	apply_button.text = "Apply Physics"
-	apply_button.pressed.connect(_on_apply_physics_pressed)
-	apply_button.disabled = true
-	hbox.add_child(apply_button)
-	
-	# Remove physics button
 	remove_button = Button.new()
 	remove_button.text = "Remove Physics"
+	remove_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	remove_button.pressed.connect(_on_remove_physics_pressed)
 	remove_button.disabled = true
-	hbox.add_child(remove_button)
-	
-	# Connect file list selection
-	file_list.item_selected.connect(_on_file_selected)
-	
-	# Initial refresh
-	call_deferred("_refresh_file_list")
+	hbox1.add_child(remove_button)
 
-func _create_header_style() -> StyleBox:
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.2, 0.3, 0.4, 0.8)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.border_color = Color(0.4, 0.6, 0.8, 1.0)
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 4
-	style.content_margin_bottom = 4
-	return style
+	# Second row of buttons (Apply actions)
+	var hbox2 = HBoxContainer.new()
+	vbox.add_child(hbox2)
+
+	apply_button = Button.new()
+	apply_button.text = "Apply (Selected)"
+	apply_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	apply_button.pressed.connect(_on_apply_physics_pressed)
+	apply_button.disabled = true
+	hbox2.add_child(apply_button)
+
+	apply_all_button = Button.new()
+	apply_all_button.text = "Apply to All"
+	apply_all_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	apply_all_button.pressed.connect(_on_apply_to_all_pressed)
+	hbox2.add_child(apply_all_button)
+	
+	file_list = ItemList.new()
+	file_list.custom_minimum_size = Vector2(0, 200)
+	file_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	file_list.allow_reselect = true
+	file_list.auto_height = false # Set to false to allow scrolling in the dock
+	vbox.add_child(file_list)
+	
+	file_list.item_selected.connect(_on_file_selected)
+	call_deferred("_refresh_file_list")
 
 func _refresh_file_list():
 	# Get all GLB/GLTF files in the project and store them
@@ -169,24 +158,18 @@ func _update_filtered_list():
 func _find_gltf_files(directory: String) -> Array:
 	var files = []
 	var dir = DirAccess.open(directory)
-	
 	if dir:
 		dir.list_dir_begin()
 		var file_name = dir.get_next()
-		
 		while file_name != "":
 			var full_path = directory + "/" + file_name
-			
 			if dir.current_is_dir() and not file_name.begins_with("."):
 				# Recursively search subdirectories
 				files.append_array(_find_gltf_files(full_path))
 			elif file_name.get_extension().to_lower() in ["glb", "gltf"]:
 				files.append(full_path)
-			
 			file_name = dir.get_next()
-		
 		dir.list_dir_end()
-	
 	return files
 
 func _has_physics_import_script(file_path: String) -> bool:
@@ -207,26 +190,6 @@ func _is_physics_import_script(script_path: String) -> bool:
 		return false
 	return script_path.matchn("*import_physics_*.gd")
 
-# Get shape type from import script filename
-func _get_shape_type_from_script_path(script_path: String) -> int:
-	if script_path.is_empty():
-		return PhysicsBase.ShapeType.NONE
-
-	var fileShapeTypeName = script_path.get_file().get_basename().replace("import_physics_", "").to_upper()
-
-	if fileShapeTypeName == "TRIMESH":
-		return PhysicsBase.ShapeType.TRIMESH
-	elif fileShapeTypeName == "CONVEX":
-		return PhysicsBase.ShapeType.CONVEX
-	elif fileShapeTypeName == "BOX":
-		return PhysicsBase.ShapeType.BOX
-	elif fileShapeTypeName == "SPHERE":
-		return PhysicsBase.ShapeType.SPHERE
-	elif fileShapeTypeName == "CAPSULE":
-		return PhysicsBase.ShapeType.CAPSULE
-	else:
-		return PhysicsBase.ShapeType.NONE
-
 # Get the physics shape type for a specific file by reading its import script
 func _get_file_physics_shape_type(file_path: String) -> int:
 	var import_path = file_path + ".import"
@@ -236,22 +199,23 @@ func _get_file_physics_shape_type(file_path: String) -> int:
 	var config = ConfigFile.new()
 	if config.load(import_path) != OK:
 		return PhysicsBase.ShapeType.NONE
+	var script_path = config.get_value("params", "import_script/path", "")
 	
-	var import_script_path = config.get_value("params", "import_script/path", "")
-	return _get_shape_type_from_script_path(import_script_path)
+	if script_path.is_empty():
+		return PhysicsBase.ShapeType.NONE
+	var type_name = script_path.get_file().get_basename().replace("import_physics_", "").to_upper()
+	match type_name:
+		"TRIMESH": return PhysicsBase.ShapeType.TRIMESH
+		"CONVEX": return PhysicsBase.ShapeType.CONVEX
+		"BOX": return PhysicsBase.ShapeType.BOX
+		"SPHERE": return PhysicsBase.ShapeType.SPHERE
+		"CAPSULE": return PhysicsBase.ShapeType.CAPSULE
+		_: return PhysicsBase.ShapeType.NONE
 
-# Restore selection after list refresh by matching file paths
 func _restore_selection(file_paths: Array) -> void:
-	if file_paths.is_empty():
-		return
-	
-	# Find and select items that match the stored file paths
 	for i in range(file_list.item_count):
-		var item_file_path = file_list.get_item_metadata(i)
-		if item_file_path in file_paths:
-			file_list.select(i, false)  # false = don't deselect others (multi-select)
-	
-	# Trigger the selection handler to update UI state
+		if file_list.get_item_metadata(i) in file_paths:
+			file_list.select(i, false)
 	var selected = file_list.get_selected_items()
 	if selected.size() > 0:
 		_on_file_selected(selected[0])
@@ -259,7 +223,7 @@ func _restore_selection(file_paths: Array) -> void:
 func _on_refresh_pressed():
 	_refresh_file_list()
 
-func _on_search_text_changed(new_text: String):
+func _on_search_text_changed(_new_text: String):
 	# Update the filtered list whenever search text changes
 	_update_filtered_list()
 
@@ -271,77 +235,53 @@ func _on_clear_search_pressed():
 func _on_file_selected(_index: int) -> void:
 	apply_button.disabled = false
 	remove_button.disabled = false
-
 	var selected_items := file_list.get_selected_items()
-	var selected_count := selected_items.size()
-
-	if selected_count != 1:
-		# Multiple or no selection – reset to default
-		shape_type_label.text = "Physics Shape Type:"
-		shape_type_option.selected = 0
-		return
-
-	# Exactly one file selected
-	var file_path := file_list.get_item_metadata(selected_items[0])
-	var shape_type := _get_file_physics_shape_type(file_path)
-
-	if shape_type == PhysicsBase.ShapeType.NONE:
-		shape_type_label.text = "Physics Shape Type (choose to apply):"
-		shape_type_option.selected = 0
-		return
-
-	# File has physics — set the dropdown to its current type
-	shape_type_label.text = "Physics Shape Type (current):"
-	var found_index := shape_type_option.get_item_index(shape_type)
-	if found_index != -1:
-		shape_type_option.selected = found_index
+	if selected_items.size() == 1:
+		var shape_type := _get_file_physics_shape_type(file_list.get_item_metadata(selected_items[0]))
+		shape_type_option.selected = shape_type_option.get_item_index(shape_type) if shape_type != PhysicsBase.ShapeType.NONE else 0
 
 func _on_apply_physics_pressed():
 	var selected_items = file_list.get_selected_items()
-	if selected_items.size() == 0:
+	var paths = []
+	for idx in selected_items: paths.append(file_list.get_item_metadata(idx))
+	_apply_to_paths(paths)
+
+func _on_apply_to_all_pressed():
+	var paths = []
+	for i in range(file_list.item_count):
+		paths.append(file_list.get_item_metadata(i))
+	_apply_to_paths(paths)
+
+func _apply_to_paths(paths: Array):
+	if paths.is_empty() or not plugin_reference:
 		return
-	
-	# Store the file paths of selected items (not indices, as they may change)
-	var selected_file_paths = []
-	for index in selected_items:
-		selected_file_paths.append(file_list.get_item_metadata(index))
-	
-	# Get the selected shape type directly from the option button ID
+
 	var shape_type = shape_type_option.get_selected_id()
 	
-	for file_path in selected_file_paths:
-		if plugin_reference:
-			if shape_type != PhysicsBase.ShapeType.NONE:
-				# Apply physics with specific shape type
-				plugin_reference.set_physics_import_script(file_path, shape_type)
-			else:
-				# None/Unknown selected - remove physics
-				plugin_reference.remove_physics_import_script(file_path)
+	for path in paths:
+		if shape_type != PhysicsBase.ShapeType.NONE:
+			plugin_reference.set_physics_import_script(path, shape_type)
+		else:
+			plugin_reference.remove_physics_import_script(path)
 	
 	# Wait a bit for import to complete, then refresh
 	await get_tree().create_timer(0.5).timeout
 	_update_filtered_list()
-	
 	# Restore selection by finding the file paths in the refreshed list
-	_restore_selection(selected_file_paths)
+	_restore_selection(paths)
 
 func _on_remove_physics_pressed():
 	var selected_items = file_list.get_selected_items()
 	if selected_items.size() == 0:
 		return
 	
-	# Store the file paths of selected items (not indices, as they may change)
-	var selected_file_paths = []
-	for index in selected_items:
-		selected_file_paths.append(file_list.get_item_metadata(index))
-	
-	for file_path in selected_file_paths:
-		if plugin_reference:
-			plugin_reference.remove_physics_import_script(file_path)
-	
-	# Wait a bit for import to complete, then refresh
+	var paths = []
+	for idx in selected_items: paths.append(file_list.get_item_metadata(idx))
+	for path in paths:
+		plugin_reference.remove_physics_import_script(path)
+		
 	await get_tree().create_timer(0.5).timeout
 	_update_filtered_list()
 	
 	# Restore selection by finding the file paths in the refreshed list
-	_restore_selection(selected_file_paths)
+	_restore_selection(paths)
