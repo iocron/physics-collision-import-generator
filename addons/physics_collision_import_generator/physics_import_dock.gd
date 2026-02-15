@@ -15,8 +15,8 @@ var shape_type_option: OptionButton
 var shape_type_label: Label
 var search_filter: LineEdit
 var all_files: Array = []  # Store all found files for filtering
-var _icon_green: ImageTexture
-var _icon_gray: ImageTexture
+var _shape_icons: Dictionary = {}  # ShapeType -> ImageTexture
+var _icon_none: ImageTexture
 
 func _init():
 	name = "Collision Import Generator"
@@ -25,40 +25,113 @@ func _init():
 	_setup_ui()
 
 func _create_status_icons():
-	for color in [Color.GREEN, Color.GRAY]:
-		var img = Image.create(12, 12, false, Image.FORMAT_RGBA8)
-		img.fill(Color.TRANSPARENT)
-		for x in range(2, 10):
-			for y in range(2, 10):
-				img.set_pixel(x, y, color)
-		var tex = ImageTexture.create_from_image(img)
-		if color == Color.GREEN:
-			_icon_green = tex
-		else:
-			_icon_gray = tex
+	var s := 12  # shape draw size
+	var h := 16  # icon height
+	var pad := 8  # left padding to indent file entries under folder headers
+	var w := pad + s # total icon width
+
+	# No physics — fully transparent (invisible but reserves space for alignment)
+	_icon_none = _make_icon(w, h, func(_img: Image): pass)
+
+	# Trimesh — red triangle
+	var c_trimesh := Color(0.9, 0.3, 0.3)
+	_shape_icons[PhysicsBase.ShapeType.TRIMESH] = _make_icon(w, h, func(img: Image):
+		for y in range(2, 14):
+			var half_w := int((y - 2) * 5.0 / 11.0)
+			var cx := pad + 6
+			for x in range(cx - half_w, cx + half_w + 1):
+				img.set_pixel(x, y, c_trimesh)
+	)
+
+	# Convex — orange diamond
+	var c_convex := Color(0.9, 0.6, 0.2)
+	_shape_icons[PhysicsBase.ShapeType.CONVEX] = _make_icon(w, h, func(img: Image):
+		var cx := pad + 6
+		var cy := 8
+		var r := 5
+		for y in range(cy - r, cy + r + 1):
+			var half_w := r - absi(y - cy)
+			for x in range(cx - half_w, cx + half_w + 1):
+				img.set_pixel(x, y, c_convex)
+	)
+
+	# Box — green square
+	var c_box := Color(0.3, 0.85, 0.4)
+	_shape_icons[PhysicsBase.ShapeType.BOX] = _make_icon(w, h, func(img: Image):
+		for x in range(pad + 1, pad + 11):
+			for y in range(3, 13):
+				img.set_pixel(x, y, c_box)
+	)
+
+	# Sphere — blue circle
+	var c_sphere := Color(0.3, 0.55, 0.95)
+	_shape_icons[PhysicsBase.ShapeType.SPHERE] = _make_icon(w, h, func(img: Image):
+		var cx := pad + 6.0
+		var cy := 8.0
+		var r := 5.0
+		for x in range(pad, w):
+			for y in range(h):
+				if (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r:
+					img.set_pixel(x, y, c_sphere)
+	)
+
+	# Capsule — purple pill
+	var c_capsule := Color(0.7, 0.4, 0.9)
+	_shape_icons[PhysicsBase.ShapeType.CAPSULE] = _make_icon(w, h, func(img: Image):
+		var cx := pad + 6.0
+		var r := 3.5
+		for x in range(pad, w):
+			for y in range(0, 6):
+				if (x - cx) * (x - cx) + (y - 5.0) * (y - 5.0) <= r * r:
+					img.set_pixel(x, y, c_capsule)
+		for x in range(int(cx - r), int(cx + r) + 1):
+			for y in range(5, 11):
+				img.set_pixel(x, y, c_capsule)
+		for x in range(pad, w):
+			for y in range(10, 16):
+				if (x - cx) * (x - cx) + (y - 10.0) * (y - 10.0) <= r * r:
+					img.set_pixel(x, y, c_capsule)
+	)
+
+func _make_icon(w: int, h: int, draw_fn: Callable) -> ImageTexture:
+	var img = Image.create(w, h, false, Image.FORMAT_RGBA8)
+	img.fill(Color.TRANSPARENT)
+	draw_fn.call(img)
+	return ImageTexture.create_from_image(img)
 
 func _setup_ui():
+	# UI Spacer/Helper
+	var spacer = Control.new()
+	spacer.custom_minimum_size = Vector2(0, 8)  # Reduced spacing
+	# Usage: vbox.add_child(spacer)
+
 	# Create vertical layout
 	var vbox = VBoxContainer.new()
 	add_child(vbox)
 	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	
-	# Title label
-	# var title = Label.new()
-	# title.text = "Physics Collision Import Generator"
-	# title.add_theme_stylebox_override("normal", _create_header_style())
-	# vbox.add_child(title)
+	shape_type_option = OptionButton.new()
+	shape_type_option.add_item("SELECT a physics shape type to apply:", PhysicsBase.ShapeType.NONE)
+	shape_type_option.add_item("Box (Simple, Fastest)", PhysicsBase.ShapeType.BOX)
+	shape_type_option.add_item("Capsule (Simple, Fastest)", PhysicsBase.ShapeType.CAPSULE)
+	shape_type_option.add_item("Convex (Optimized)", PhysicsBase.ShapeType.CONVEX)
+	shape_type_option.add_item("Sphere (Simple, Fastest)", PhysicsBase.ShapeType.SPHERE)
+	shape_type_option.add_item("Trimesh (Exact, but Slow)", PhysicsBase.ShapeType.TRIMESH)
+	shape_type_option.selected = 0  # Default to None/Unknown
+	shape_type_option.item_selected.connect(_on_shape_type_changed)
+	vbox.add_child(shape_type_option)
 	
 	# Info label
-	var info = Label.new()
-	info.text = "GLB/GLTF files in project:"
-	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	vbox.add_child(info)
-	
+	# var info = Label.new()
+	# info.text = "GLB/GLTF files in project:"
+	# info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# vbox.add_child(info)
+	vbox.add_child(spacer)
+
 	# Search filter container
 	var search_container = HBoxContainer.new()
 	vbox.add_child(search_container)
-	
+
 	# Search filter
 	search_filter = LineEdit.new()
 	search_filter.placeholder_text = "Filter Files"
@@ -66,7 +139,7 @@ func _setup_ui():
 	search_filter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	search_filter.text_changed.connect(_on_search_text_changed)
 	search_container.add_child(search_filter)
-	
+
 	# Clear search button
 	var clear_button = Button.new()
 	clear_button.text = "×"
@@ -74,77 +147,64 @@ func _setup_ui():
 	clear_button.tooltip_text = "Clear search"
 	clear_button.pressed.connect(_on_clear_search_pressed)
 	search_container.add_child(clear_button)
-	
-	# Shape type selection
-	shape_type_label = Label.new()
-	shape_type_label.text = "Physics Shape Type:"
-	vbox.add_child(shape_type_label)
-	
-	shape_type_option = OptionButton.new()
-	shape_type_option.add_item("CHOOSE:", PhysicsBase.ShapeType.NONE)
-	shape_type_option.add_item("Trimesh (Exact, but Slow)", PhysicsBase.ShapeType.TRIMESH)
-	shape_type_option.add_item("Convex (Optimized)", PhysicsBase.ShapeType.CONVEX)
-	shape_type_option.add_item("Box (Simple, Fastest)", PhysicsBase.ShapeType.BOX)
-	shape_type_option.add_item("Sphere (Simple, Fastest)", PhysicsBase.ShapeType.SPHERE)
-	shape_type_option.add_item("Capsule (Simple, Fastest)", PhysicsBase.ShapeType.CAPSULE)
-	shape_type_option.selected = 0  # Default to None/Unknown
-	shape_type_option.item_selected.connect(_on_shape_type_changed)
-	vbox.add_child(shape_type_option)
-	
-	# Add minimal spacing
-	var spacer = Control.new()
-	spacer.custom_minimum_size = Vector2(0, 4)  # Reduced spacing
-	vbox.add_child(spacer)
-	
-	# First row of buttons
-	var hbox1 = HBoxContainer.new()
-	vbox.add_child(hbox1)
-	
+
+	# Refresh button (icon loaded from editor theme)
 	refresh_button = Button.new()
-	refresh_button.text = "Refresh List"
-	refresh_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	refresh_button.custom_minimum_size = Vector2(24, 24)
+	refresh_button.tooltip_text = "Refresh file list"
 	refresh_button.pressed.connect(_on_refresh_pressed)
-	hbox1.add_child(refresh_button)
-	
-	remove_button = Button.new()
-	remove_button.text = "Remove Physics (selected)"
-	remove_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	remove_button.pressed.connect(_on_remove_physics_pressed)
-	remove_button.disabled = true
-	hbox1.add_child(remove_button)
+	search_container.add_child(refresh_button)
+	# Defer icon load until the button is in the scene tree
+	refresh_button.ready.connect(func():
+		var icon = refresh_button.get_theme_icon("Reload", "EditorIcons")
+		if icon:
+			refresh_button.icon = icon
+		else:
+			refresh_button.text = "↻"
+	)
 
-	# Second row of buttons (Apply actions)
-	var hbox2 = HBoxContainer.new()
-	vbox.add_child(hbox2)
-
-	apply_button = Button.new()
-	apply_button.text = "Apply Physics (selected)"
-	apply_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	apply_button.pressed.connect(_on_apply_physics_pressed)
-	apply_button.disabled = true
-	hbox2.add_child(apply_button)
-
-	apply_all_button = Button.new()
-	apply_all_button.text = "Apply to All"
-	apply_all_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	apply_all_button.pressed.connect(_on_apply_to_all_pressed)
-	apply_all_button.disabled = true
-	hbox2.add_child(apply_all_button)
-	
 	file_list = ItemList.new()
 	file_list.custom_minimum_size = Vector2(0, 200)
 	file_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	file_list.select_mode = ItemList.SELECT_MULTI
 	file_list.allow_reselect = true
 	file_list.auto_height = false # Set to false to allow scrolling in the dock
+	file_list.add_theme_constant_override("icon_margin", 2)
 	vbox.add_child(file_list)
 
 	file_list.multi_selected.connect(_on_multi_selected)
+
+	# Action buttons row (below list, always visible)
+	var hbox_buttons = HBoxContainer.new()
+	vbox.add_child(hbox_buttons)
+
+	remove_button = Button.new()
+	remove_button.text = "Remove"
+	remove_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	remove_button.pressed.connect(_on_remove_physics_pressed)
+	remove_button.disabled = true
+	hbox_buttons.add_child(remove_button)
+
+	apply_button = Button.new()
+	apply_button.text = "Apply"
+	apply_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	apply_button.pressed.connect(_on_apply_physics_pressed)
+	apply_button.disabled = true
+	hbox_buttons.add_child(apply_button)
+
+	apply_all_button = Button.new()
+	apply_all_button.text = "Apply All"
+	apply_all_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	apply_all_button.pressed.connect(_on_apply_to_all_pressed)
+	apply_all_button.disabled = true
+	hbox_buttons.add_child(apply_all_button)
+
 	call_deferred("_refresh_file_list")
 
 func _refresh_file_list():
 	# Get all GLB/GLTF files in the project and store them
 	all_files = _find_gltf_files("res://")
+	all_files.sort()
 	_update_filtered_list()
 
 func _update_filtered_list():
@@ -155,24 +215,38 @@ func _update_filtered_list():
 	# Get the current search filter
 	var filter_text = search_filter.text.to_lower() if search_filter else ""
 	
-	# Filter and display files
+	# Group files by parent directory
+	var grouped: Dictionary = {}
 	for file_path in all_files:
 		var file_name = file_path.get_file()
-		
-		# Apply search filter
-		if filter_text != "" and not file_name.to_lower().contains(filter_text):
+		if filter_text != "" and not file_path.to_lower().contains(filter_text):
 			continue
-		
-		var item_index = file_list.add_item(file_name)
-		file_list.set_item_metadata(item_index, file_path)
-		
-		# Check if it already has physics import script
-		if _has_physics_import_script(file_path):
-			file_list.set_item_icon(item_index, _icon_green)
-			file_list.set_item_tooltip(item_index, file_path + "\n✓ Physics import script applied")
-		else:
-			file_list.set_item_icon(item_index, _icon_gray)
-			file_list.set_item_tooltip(item_index, file_path + "\n○ No physics import script")
+		var dir_path = file_path.get_base_dir()
+		if dir_path not in grouped:
+			grouped[dir_path] = []
+		grouped[dir_path].append(file_path)
+
+	# Display grouped files with folder separators
+	for dir_path in grouped:
+		# Add folder separator (non-selectable)
+		var sep_index = file_list.add_item(dir_path.replace("res://", "").lstrip("/") + "/")
+		file_list.set_item_selectable(sep_index, false)
+		file_list.set_item_custom_fg_color(sep_index, Color(1, 1, 1, 0.4))
+
+		for file_path in grouped[dir_path]:
+			var file_name = file_path.get_file()
+			var item_index = file_list.add_item("  " + file_name)
+			file_list.set_item_metadata(item_index, file_path)
+
+			# Show shape-specific icon if physics is applied
+			var shape_type := _get_file_physics_shape_type(file_path)
+			if shape_type != PhysicsBase.ShapeType.NONE and shape_type in _shape_icons:
+				file_list.set_item_icon(item_index, _shape_icons[shape_type])
+				var shape_name := _get_shape_name(shape_type)
+				file_list.set_item_tooltip(item_index, file_path + "\n✓ " + shape_name)
+			else:
+				file_list.set_item_icon(item_index, _icon_none)
+				file_list.set_item_tooltip(item_index, file_path + "\n○ No physics import script")
 
 func _find_gltf_files(directory: String) -> Array:
 	var files = []
@@ -231,6 +305,15 @@ func _get_file_physics_shape_type(file_path: String) -> int:
 		"CAPSULE": return PhysicsBase.ShapeType.CAPSULE
 		_: return PhysicsBase.ShapeType.NONE
 
+func _get_shape_name(shape_type: int) -> String:
+	match shape_type:
+		PhysicsBase.ShapeType.TRIMESH: return "Trimesh"
+		PhysicsBase.ShapeType.CONVEX: return "Convex"
+		PhysicsBase.ShapeType.BOX: return "Box"
+		PhysicsBase.ShapeType.SPHERE: return "Sphere"
+		PhysicsBase.ShapeType.CAPSULE: return "Capsule"
+		_: return "None"
+
 func _restore_selection(file_paths: Array) -> void:
 	for i in range(file_list.item_count):
 		if file_list.get_item_metadata(i) in file_paths:
@@ -253,9 +336,15 @@ func _on_clear_search_pressed():
 
 func _update_button_states() -> void:
 	var has_shape := shape_type_option.get_selected_id() != PhysicsBase.ShapeType.NONE
-	var has_selection := not file_list.get_selected_items().is_empty()
+	var selected_items := file_list.get_selected_items()
+	var has_selection := not selected_items.is_empty()
+	var any_has_physics := false
+	for idx in selected_items:
+		if _has_physics_import_script(file_list.get_item_metadata(idx)):
+			any_has_physics = true
+			break
 	apply_button.disabled = not (has_shape and has_selection)
-	remove_button.disabled = not (has_shape and has_selection)
+	remove_button.disabled = not (has_selection and any_has_physics)
 	apply_all_button.disabled = not has_shape
 
 func _on_shape_type_changed(_index: int) -> void:
