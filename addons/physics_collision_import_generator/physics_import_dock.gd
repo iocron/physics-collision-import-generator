@@ -123,31 +123,6 @@ func _setup_ui():
 	shape_type_option.item_selected.connect(_on_shape_type_changed)
 	vbox.add_child(shape_type_option)
 	
-	# Action buttons row
-	var hbox_buttons = HBoxContainer.new()
-	vbox.add_child(hbox_buttons)
-
-	remove_button = Button.new()
-	remove_button.text = "Remove"
-	remove_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	remove_button.pressed.connect(_on_remove_physics_pressed)
-	remove_button.disabled = true
-	hbox_buttons.add_child(remove_button)
-
-	apply_button = Button.new()
-	apply_button.text = "Apply"
-	apply_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	apply_button.pressed.connect(_on_apply_physics_pressed)
-	apply_button.disabled = true
-	hbox_buttons.add_child(apply_button)
-
-	apply_all_button = Button.new()
-	apply_all_button.text = "Apply All"
-	apply_all_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	apply_all_button.pressed.connect(_on_apply_to_all_pressed)
-	apply_all_button.disabled = true
-	hbox_buttons.add_child(apply_all_button)
-
 	# Info label
 	# var info = Label.new()
 	# info.text = "GLB/GLTF files in project:"
@@ -199,6 +174,32 @@ func _setup_ui():
 	vbox.add_child(file_list)
 
 	file_list.multi_selected.connect(_on_multi_selected)
+
+	# Action buttons row (below list, always visible)
+	var hbox_buttons = HBoxContainer.new()
+	vbox.add_child(hbox_buttons)
+
+	remove_button = Button.new()
+	remove_button.text = "Remove"
+	remove_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	remove_button.pressed.connect(_on_remove_physics_pressed)
+	remove_button.disabled = true
+	hbox_buttons.add_child(remove_button)
+
+	apply_button = Button.new()
+	apply_button.text = "Apply"
+	apply_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	apply_button.pressed.connect(_on_apply_physics_pressed)
+	apply_button.disabled = true
+	hbox_buttons.add_child(apply_button)
+
+	apply_all_button = Button.new()
+	apply_all_button.text = "Apply All"
+	apply_all_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	apply_all_button.pressed.connect(_on_apply_to_all_pressed)
+	apply_all_button.disabled = true
+	hbox_buttons.add_child(apply_all_button)
+
 	call_deferred("_refresh_file_list")
 
 func _refresh_file_list():
