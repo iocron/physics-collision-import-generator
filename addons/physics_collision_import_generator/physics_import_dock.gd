@@ -88,6 +88,7 @@ func _setup_ui():
 	shape_type_option.add_item("Sphere (Simple, Fastest)", PhysicsBase.ShapeType.SPHERE)
 	shape_type_option.add_item("Capsule (Simple, Fastest)", PhysicsBase.ShapeType.CAPSULE)
 	shape_type_option.selected = 0  # Default to None/Unknown
+	shape_type_option.item_selected.connect(_on_shape_type_changed)
 	vbox.add_child(shape_type_option)
 	
 	# Add minimal spacing
@@ -127,6 +128,7 @@ func _setup_ui():
 	apply_all_button.text = "Apply to All"
 	apply_all_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	apply_all_button.pressed.connect(_on_apply_to_all_pressed)
+	apply_all_button.disabled = true
 	hbox2.add_child(apply_all_button)
 	
 	file_list = ItemList.new()
@@ -249,13 +251,21 @@ func _on_clear_search_pressed():
 	search_filter.text = ""
 	_update_filtered_list()
 
+func _update_button_states() -> void:
+	var has_shape := shape_type_option.get_selected_id() != PhysicsBase.ShapeType.NONE
+	var has_selection := not file_list.get_selected_items().is_empty()
+	apply_button.disabled = not (has_shape and has_selection)
+	remove_button.disabled = not (has_shape and has_selection)
+	apply_all_button.disabled = not has_shape
+
+func _on_shape_type_changed(_index: int) -> void:
+	_update_button_states()
+
 func _on_multi_selected(_index: int, _selected: bool) -> void:
-	var selected_items := file_list.get_selected_items()
-	apply_button.disabled = selected_items.is_empty()
-	remove_button.disabled = selected_items.is_empty()
-	if selected_items.size() == 1:
-		var shape_type := _get_file_physics_shape_type(file_list.get_item_metadata(selected_items[0]))
+	if file_list.get_selected_items().size() == 1:
+		var shape_type := _get_file_physics_shape_type(file_list.get_item_metadata(file_list.get_selected_items()[0]))
 		shape_type_option.selected = shape_type_option.get_item_index(shape_type) if shape_type != PhysicsBase.ShapeType.NONE else 0
+	_update_button_states()
 
 func _on_apply_physics_pressed():
 	var selected_items = file_list.get_selected_items()
