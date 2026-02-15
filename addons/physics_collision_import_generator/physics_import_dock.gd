@@ -38,50 +38,23 @@ func _create_status_icons():
 			_icon_gray = tex
 
 func _setup_ui():
+	# UI Spacer/Helper
+	var spacer = Control.new()
+	spacer.custom_minimum_size = Vector2(0, 8)  # Reduced spacing
+	# Usage: vbox.add_child(spacer)
+
 	# Create vertical layout
 	var vbox = VBoxContainer.new()
 	add_child(vbox)
 	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	
-	# Title label
-	# var title = Label.new()
-	# title.text = "Physics Collision Import Generator"
-	# title.add_theme_stylebox_override("normal", _create_header_style())
-	# vbox.add_child(title)
-	
-	# Info label
-	var info = Label.new()
-	info.text = "GLB/GLTF files in project:"
-	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	vbox.add_child(info)
-	
-	# Search filter container
-	var search_container = HBoxContainer.new()
-	vbox.add_child(search_container)
-	
-	# Search filter
-	search_filter = LineEdit.new()
-	search_filter.placeholder_text = "Filter Files"
-	search_filter.custom_minimum_size = Vector2(0, 24)
-	search_filter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	search_filter.text_changed.connect(_on_search_text_changed)
-	search_container.add_child(search_filter)
-	
-	# Clear search button
-	var clear_button = Button.new()
-	clear_button.text = "×"
-	clear_button.custom_minimum_size = Vector2(24, 24)
-	clear_button.tooltip_text = "Clear search"
-	clear_button.pressed.connect(_on_clear_search_pressed)
-	search_container.add_child(clear_button)
-	
 	# Shape type selection
-	shape_type_label = Label.new()
-	shape_type_label.text = "Physics Shape Type:"
-	vbox.add_child(shape_type_label)
+	# shape_type_label = Label.new()
+	# shape_type_label.text = "Physics Shape Type:"
+	# vbox.add_child(shape_type_label)
 	
 	shape_type_option = OptionButton.new()
-	shape_type_option.add_item("CHOOSE:", PhysicsBase.ShapeType.NONE)
+	shape_type_option.add_item("CHOOSE a physics shape type to apply:", PhysicsBase.ShapeType.NONE)
 	shape_type_option.add_item("Trimesh (Exact, but Slow)", PhysicsBase.ShapeType.TRIMESH)
 	shape_type_option.add_item("Convex (Optimized)", PhysicsBase.ShapeType.CONVEX)
 	shape_type_option.add_item("Box (Simple, Fastest)", PhysicsBase.ShapeType.BOX)
@@ -90,11 +63,6 @@ func _setup_ui():
 	shape_type_option.selected = 0  # Default to None/Unknown
 	shape_type_option.item_selected.connect(_on_shape_type_changed)
 	vbox.add_child(shape_type_option)
-	
-	# Add minimal spacing
-	var spacer = Control.new()
-	spacer.custom_minimum_size = Vector2(0, 4)  # Reduced spacing
-	vbox.add_child(spacer)
 	
 	# First row of buttons
 	var hbox1 = HBoxContainer.new()
@@ -130,7 +98,34 @@ func _setup_ui():
 	apply_all_button.pressed.connect(_on_apply_to_all_pressed)
 	apply_all_button.disabled = true
 	hbox2.add_child(apply_all_button)
-	
+
+	# Info label
+	# var info = Label.new()
+	# info.text = "GLB/GLTF files in project:"
+	# info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# vbox.add_child(info)
+	vbox.add_child(spacer)
+
+	# Search filter container
+	var search_container = HBoxContainer.new()
+	vbox.add_child(search_container)
+
+	# Search filter
+	search_filter = LineEdit.new()
+	search_filter.placeholder_text = "Filter Files"
+	search_filter.custom_minimum_size = Vector2(0, 24)
+	search_filter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	search_filter.text_changed.connect(_on_search_text_changed)
+	search_container.add_child(search_filter)
+
+	# Clear search button
+	var clear_button = Button.new()
+	clear_button.text = "×"
+	clear_button.custom_minimum_size = Vector2(24, 24)
+	clear_button.tooltip_text = "Clear search"
+	clear_button.pressed.connect(_on_clear_search_pressed)
+	search_container.add_child(clear_button)
+
 	file_list = ItemList.new()
 	file_list.custom_minimum_size = Vector2(0, 200)
 	file_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
