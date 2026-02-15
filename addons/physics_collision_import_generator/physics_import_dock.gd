@@ -277,7 +277,16 @@ func _on_apply_to_all_pressed():
 	var paths = []
 	for i in range(file_list.item_count):
 		paths.append(file_list.get_item_metadata(i))
-	_apply_to_paths(paths)
+	if paths.is_empty():
+		return
+	var shape_name = shape_type_option.get_item_text(shape_type_option.selected)
+	var dialog = ConfirmationDialog.new()
+	dialog.dialog_text = "Are you sure to apply \"%s\" to %d file(s)?\nFiles with an existing physics shape will be overridden!" % [shape_name, paths.size()]
+	dialog.confirmed.connect(func(): _apply_to_paths(paths))
+	dialog.canceled.connect(func(): dialog.queue_free())
+	dialog.confirmed.connect(func(): dialog.queue_free())
+	add_child(dialog)
+	dialog.popup_centered()
 
 func _apply_to_paths(paths: Array):
 	if paths.is_empty() or not plugin_reference:
