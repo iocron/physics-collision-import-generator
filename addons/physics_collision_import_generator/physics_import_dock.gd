@@ -134,7 +134,7 @@ func _setup_ui():
 
 	# Search filter
 	search_filter = LineEdit.new()
-	search_filter.placeholder_text = "Filter Files"
+	search_filter.placeholder_text = "Filter Files/Folders"
 	search_filter.custom_minimum_size = Vector2(0, 24)
 	search_filter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	search_filter.text_changed.connect(_on_search_text_changed)
@@ -173,6 +173,7 @@ func _setup_ui():
 	vbox.add_child(file_list)
 
 	file_list.multi_selected.connect(_on_multi_selected)
+	file_list.set_drag_forwarding(_file_list_get_drag_data, Callable(), Callable())
 
 	# Action buttons row (below list, always visible)
 	var hbox_buttons = HBoxContainer.new()
@@ -313,6 +314,30 @@ func _get_shape_name(shape_type: int) -> String:
 		PhysicsBase.ShapeType.SPHERE: return "Sphere"
 		PhysicsBase.ShapeType.CAPSULE: return "Capsule"
 		_: return "None"
+
+func _file_list_get_drag_data(at_position: Vector2):
+	var item_index = file_list.get_item_at_position(at_position)
+	if item_index < 0:
+		return null
+	# Use selected items if the dragged item is part of the selection
+	var selected = file_list.get_selected_items()
+	var files: PackedStringArray = []
+	if item_index in selected:
+		for idx in selected:
+			var meta = file_list.get_item_metadata(idx)
+			if meta:
+				files.append(meta)
+	else:
+		var meta = file_list.get_item_metadata(item_index)
+		if meta:
+			files.append(meta)
+	if files.is_empty():
+		return null
+	# Use the same format as Godot's FileSystem dock
+	var preview = Label.new()
+	preview.text = files[0].get_file() if files.size() == 1 else "%d files" % files.size()
+	file_list.set_drag_preview(preview)
+	return {"type": "files", "files": files}
 
 func _restore_selection(file_paths: Array) -> void:
 	for i in range(file_list.item_count):

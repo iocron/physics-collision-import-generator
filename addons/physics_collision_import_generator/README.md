@@ -1,6 +1,8 @@
 # Physics Collision Import Generator
 
-This Godot plugin automatically generates physics bodies and collision shapes when importing 3D scenes from GLB/GLTF files. It also supports bulk processing of multiple assets, with potential support for additional formats in the future.
+This Godot plugin generates physics bodies and collision shapes for 3D scenes from GLB/GLTF files. Select files in the Collision Import Generator dock, choose a shape type, and apply. The plugin sets up import scripts that automatically add physics on each reimport.
+
+This captures both the user action (applying via the dock) and the persistent behavior (the import script runs on future reimports).
 
 ## Installation
 
@@ -23,6 +25,11 @@ This Godot plugin automatically generates physics bodies and collision shapes wh
 
 - Automatically creates StaticBody3D nodes with CollisionShape3D for all MeshInstance3D nodes
 - Multiple physics shape types supported
+- Multi-select files (Shift/Ctrl-click) and bulk apply/remove physics
+- Apply a shape type to all files at once with confirmation
+- Files grouped by folder with shape-specific colored icons
+- Filter files by name or folder path
+- Drag and drop files from the list into the editor (viewport, scene tree, etc.)
 - Preserves existing scene structure
 - Uses Godot's import script system to automatically process scenes during import
 
@@ -38,7 +45,7 @@ This Godot plugin automatically generates physics bodies and collision shapes wh
 
 - Physics bodies are created as StaticBody3D by default
 - Existing StaticBody3D nodes are reused when possible
-- The plugin sets the **Import Script Path** in the file's `.import` configuration to automatically process scenes during import
+- The plugin sets the **Import Script Path** in the file's import configuration to automatically process scenes during import
 
 ## Preview
 
