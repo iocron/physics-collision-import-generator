@@ -215,26 +215,38 @@ func _update_filtered_list():
 	# Get the current search filter
 	var filter_text = search_filter.text.to_lower() if search_filter else ""
 	
-	# Filter and display files
+	# Group files by parent directory
+	var grouped: Dictionary = {}
 	for file_path in all_files:
 		var file_name = file_path.get_file()
-		
-		# Apply search filter
 		if filter_text != "" and not file_name.to_lower().contains(filter_text):
 			continue
-		
-		var item_index = file_list.add_item(file_name)
-		file_list.set_item_metadata(item_index, file_path)
-		
-		# Show shape-specific icon if physics is applied
-		var shape_type := _get_file_physics_shape_type(file_path)
-		if shape_type != PhysicsBase.ShapeType.NONE and shape_type in _shape_icons:
-			file_list.set_item_icon(item_index, _shape_icons[shape_type])
-			var shape_name := _get_shape_name(shape_type)
-			file_list.set_item_tooltip(item_index, file_path + "\n✓ " + shape_name)
-		else:
-			file_list.set_item_icon(item_index, _icon_none)
-			file_list.set_item_tooltip(item_index, file_path + "\n○ No physics import script")
+		var dir_path = file_path.get_base_dir()
+		if dir_path not in grouped:
+			grouped[dir_path] = []
+		grouped[dir_path].append(file_path)
+
+	# Display grouped files with folder separators
+	for dir_path in grouped:
+		# Add folder separator (non-selectable)
+		var sep_index = file_list.add_item(dir_path.replace("res://", "").lstrip("/") + "/")
+		file_list.set_item_selectable(sep_index, false)
+		file_list.set_item_custom_fg_color(sep_index, Color(1, 1, 1, 0.4))
+
+		for file_path in grouped[dir_path]:
+			var file_name = file_path.get_file()
+			var item_index = file_list.add_item("  " + file_name)
+			file_list.set_item_metadata(item_index, file_path)
+
+			# Show shape-specific icon if physics is applied
+			var shape_type := _get_file_physics_shape_type(file_path)
+			if shape_type != PhysicsBase.ShapeType.NONE and shape_type in _shape_icons:
+				file_list.set_item_icon(item_index, _shape_icons[shape_type])
+				var shape_name := _get_shape_name(shape_type)
+				file_list.set_item_tooltip(item_index, file_path + "\n✓ " + shape_name)
+			else:
+				file_list.set_item_icon(item_index, _icon_none)
+				file_list.set_item_tooltip(item_index, file_path + "\n○ No physics import script")
 
 func _find_gltf_files(directory: String) -> Array:
 	var files = []
