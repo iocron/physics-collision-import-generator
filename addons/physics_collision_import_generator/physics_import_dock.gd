@@ -123,34 +123,30 @@ func _setup_ui():
 	shape_type_option.item_selected.connect(_on_shape_type_changed)
 	vbox.add_child(shape_type_option)
 	
-	# First row of buttons
-	var hbox1 = HBoxContainer.new()
-	vbox.add_child(hbox1)
-	
+	# Action buttons row
+	var hbox_buttons = HBoxContainer.new()
+	vbox.add_child(hbox_buttons)
+
 	remove_button = Button.new()
-	remove_button.text = "Remove Physics (selected)"
+	remove_button.text = "Remove"
 	remove_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	remove_button.pressed.connect(_on_remove_physics_pressed)
 	remove_button.disabled = true
-	hbox1.add_child(remove_button)
-
-	# Second row of buttons (Apply actions)
-	var hbox2 = HBoxContainer.new()
-	vbox.add_child(hbox2)
+	hbox_buttons.add_child(remove_button)
 
 	apply_button = Button.new()
-	apply_button.text = "Apply Physics (selected)"
+	apply_button.text = "Apply"
 	apply_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	apply_button.pressed.connect(_on_apply_physics_pressed)
 	apply_button.disabled = true
-	hbox2.add_child(apply_button)
+	hbox_buttons.add_child(apply_button)
 
 	apply_all_button = Button.new()
-	apply_all_button.text = "Apply to All"
+	apply_all_button.text = "Apply All"
 	apply_all_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	apply_all_button.pressed.connect(_on_apply_to_all_pressed)
 	apply_all_button.disabled = true
-	hbox2.add_child(apply_all_button)
+	hbox_buttons.add_child(apply_all_button)
 
 	# Info label
 	# var info = Label.new()
