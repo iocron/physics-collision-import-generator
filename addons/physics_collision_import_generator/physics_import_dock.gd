@@ -25,27 +25,30 @@ func _init():
 	_setup_ui()
 
 func _create_status_icons():
-	var size := 16
+	var s := 12  # shape draw size
+	var h := 16  # icon height
+	var pad := 8  # left padding to indent file entries under folder headers
+	var w := pad + s # total icon width
 
-	# No physics — fully transparent (invisible but reserves space)
-	_icon_none = _create_icon(size, func(_img: Image): pass)
+	# No physics — fully transparent (invisible but reserves space for alignment)
+	_icon_none = _make_icon(w, h, func(_img: Image): pass)
 
 	# Trimesh — red triangle
 	var c_trimesh := Color(0.9, 0.3, 0.3)
-	_shape_icons[PhysicsBase.ShapeType.TRIMESH] = _create_icon(size, func(img: Image):
+	_shape_icons[PhysicsBase.ShapeType.TRIMESH] = _make_icon(w, h, func(img: Image):
 		for y in range(2, 14):
-			var half_w := int((y - 2) * 6.0 / 11.0)
-			var cx := 8
+			var half_w := int((y - 2) * 5.0 / 11.0)
+			var cx := pad + 6
 			for x in range(cx - half_w, cx + half_w + 1):
 				img.set_pixel(x, y, c_trimesh)
 	)
 
 	# Convex — orange diamond
 	var c_convex := Color(0.9, 0.6, 0.2)
-	_shape_icons[PhysicsBase.ShapeType.CONVEX] = _create_icon(size, func(img: Image):
-		var cx := 8
+	_shape_icons[PhysicsBase.ShapeType.CONVEX] = _make_icon(w, h, func(img: Image):
+		var cx := pad + 6
 		var cy := 8
-		var r := 6
+		var r := 5
 		for y in range(cy - r, cy + r + 1):
 			var half_w := r - absi(y - cy)
 			for x in range(cx - half_w, cx + half_w + 1):
@@ -54,44 +57,44 @@ func _create_status_icons():
 
 	# Box — green square
 	var c_box := Color(0.3, 0.85, 0.4)
-	_shape_icons[PhysicsBase.ShapeType.BOX] = _create_icon(size, func(img: Image):
-		for x in range(3, 13):
+	_shape_icons[PhysicsBase.ShapeType.BOX] = _make_icon(w, h, func(img: Image):
+		for x in range(pad + 1, pad + 11):
 			for y in range(3, 13):
 				img.set_pixel(x, y, c_box)
 	)
 
 	# Sphere — blue circle
 	var c_sphere := Color(0.3, 0.55, 0.95)
-	_shape_icons[PhysicsBase.ShapeType.SPHERE] = _create_icon(size, func(img: Image):
-		var cx := 8.0
+	_shape_icons[PhysicsBase.ShapeType.SPHERE] = _make_icon(w, h, func(img: Image):
+		var cx := pad + 6.0
 		var cy := 8.0
-		var r := 5.5
-		for x in range(size):
-			for y in range(size):
+		var r := 5.0
+		for x in range(pad, w):
+			for y in range(h):
 				if (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r:
 					img.set_pixel(x, y, c_sphere)
 	)
 
 	# Capsule — purple pill
 	var c_capsule := Color(0.7, 0.4, 0.9)
-	_shape_icons[PhysicsBase.ShapeType.CAPSULE] = _create_icon(size, func(img: Image):
-		var cx := 8.0
-		var r := 4.0
-		for x in range(size):
+	_shape_icons[PhysicsBase.ShapeType.CAPSULE] = _make_icon(w, h, func(img: Image):
+		var cx := pad + 6.0
+		var r := 3.5
+		for x in range(pad, w):
 			for y in range(0, 6):
 				if (x - cx) * (x - cx) + (y - 5.0) * (y - 5.0) <= r * r:
 					img.set_pixel(x, y, c_capsule)
 		for x in range(int(cx - r), int(cx + r) + 1):
 			for y in range(5, 11):
 				img.set_pixel(x, y, c_capsule)
-		for x in range(size):
+		for x in range(pad, w):
 			for y in range(10, 16):
 				if (x - cx) * (x - cx) + (y - 10.0) * (y - 10.0) <= r * r:
 					img.set_pixel(x, y, c_capsule)
 	)
 
-func _create_icon(size: int, draw_fn: Callable) -> ImageTexture:
-	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+func _make_icon(w: int, h: int, draw_fn: Callable) -> ImageTexture:
+	var img = Image.create(w, h, false, Image.FORMAT_RGBA8)
 	img.fill(Color.TRANSPARENT)
 	draw_fn.call(img)
 	return ImageTexture.create_from_image(img)
@@ -171,6 +174,7 @@ func _setup_ui():
 	file_list.select_mode = ItemList.SELECT_MULTI
 	file_list.allow_reselect = true
 	file_list.auto_height = false # Set to false to allow scrolling in the dock
+	file_list.add_theme_constant_override("icon_margin", 2)
 	vbox.add_child(file_list)
 
 	file_list.multi_selected.connect(_on_multi_selected)
