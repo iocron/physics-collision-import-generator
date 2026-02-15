@@ -324,9 +324,15 @@ func _on_clear_search_pressed():
 
 func _update_button_states() -> void:
 	var has_shape := shape_type_option.get_selected_id() != PhysicsBase.ShapeType.NONE
-	var has_selection := not file_list.get_selected_items().is_empty()
+	var selected_items := file_list.get_selected_items()
+	var has_selection := not selected_items.is_empty()
+	var any_has_physics := false
+	for idx in selected_items:
+		if _has_physics_import_script(file_list.get_item_metadata(idx)):
+			any_has_physics = true
+			break
 	apply_button.disabled = not (has_shape and has_selection)
-	remove_button.disabled = not (has_shape and has_selection)
+	remove_button.disabled = not (has_selection and any_has_physics)
 	apply_all_button.disabled = not has_shape
 
 func _on_shape_type_changed(_index: int) -> void:
