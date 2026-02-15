@@ -15,8 +15,8 @@ var shape_type_option: OptionButton
 var shape_type_label: Label
 var search_filter: LineEdit
 var all_files: Array = []  # Store all found files for filtering
-var _icon_green: ImageTexture
-var _icon_gray: ImageTexture
+var _shape_icons: Dictionary = {}  # ShapeType -> ImageTexture
+var _icon_none: ImageTexture
 
 func _init():
 	name = "Collision Import Generator"
@@ -25,17 +25,76 @@ func _init():
 	_setup_ui()
 
 func _create_status_icons():
-	for color in [Color.GREEN, Color.GRAY]:
-		var img = Image.create(12, 12, false, Image.FORMAT_RGBA8)
-		img.fill(Color.TRANSPARENT)
-		for x in range(2, 10):
-			for y in range(2, 10):
-				img.set_pixel(x, y, color)
-		var tex = ImageTexture.create_from_image(img)
-		if color == Color.GREEN:
-			_icon_green = tex
-		else:
-			_icon_gray = tex
+	var size := 16
+
+	# No physics — fully transparent (invisible but reserves space)
+	_icon_none = _create_icon(size, func(_img: Image): pass)
+
+	# Trimesh — red triangle
+	var c_trimesh := Color(0.9, 0.3, 0.3)
+	_shape_icons[PhysicsBase.ShapeType.TRIMESH] = _create_icon(size, func(img: Image):
+		for y in range(2, 14):
+			var half_w := int((y - 2) * 6.0 / 11.0)
+			var cx := 8
+			for x in range(cx - half_w, cx + half_w + 1):
+				img.set_pixel(x, y, c_trimesh)
+	)
+
+	# Convex — orange diamond
+	var c_convex := Color(0.9, 0.6, 0.2)
+	_shape_icons[PhysicsBase.ShapeType.CONVEX] = _create_icon(size, func(img: Image):
+		var cx := 8
+		var cy := 8
+		var r := 6
+		for y in range(cy - r, cy + r + 1):
+			var half_w := r - absi(y - cy)
+			for x in range(cx - half_w, cx + half_w + 1):
+				img.set_pixel(x, y, c_convex)
+	)
+
+	# Box — green square
+	var c_box := Color(0.3, 0.85, 0.4)
+	_shape_icons[PhysicsBase.ShapeType.BOX] = _create_icon(size, func(img: Image):
+		for x in range(3, 13):
+			for y in range(3, 13):
+				img.set_pixel(x, y, c_box)
+	)
+
+	# Sphere — blue circle
+	var c_sphere := Color(0.3, 0.55, 0.95)
+	_shape_icons[PhysicsBase.ShapeType.SPHERE] = _create_icon(size, func(img: Image):
+		var cx := 8.0
+		var cy := 8.0
+		var r := 5.5
+		for x in range(size):
+			for y in range(size):
+				if (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r:
+					img.set_pixel(x, y, c_sphere)
+	)
+
+	# Capsule — purple pill
+	var c_capsule := Color(0.7, 0.4, 0.9)
+	_shape_icons[PhysicsBase.ShapeType.CAPSULE] = _create_icon(size, func(img: Image):
+		var cx := 8.0
+		var r := 4.0
+		for x in range(size):
+			for y in range(0, 6):
+				if (x - cx) * (x - cx) + (y - 5.0) * (y - 5.0) <= r * r:
+					img.set_pixel(x, y, c_capsule)
+		for x in range(int(cx - r), int(cx + r) + 1):
+			for y in range(5, 11):
+				img.set_pixel(x, y, c_capsule)
+		for x in range(size):
+			for y in range(10, 16):
+				if (x - cx) * (x - cx) + (y - 10.0) * (y - 10.0) <= r * r:
+					img.set_pixel(x, y, c_capsule)
+	)
+
+func _create_icon(size: int, draw_fn: Callable) -> ImageTexture:
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color.TRANSPARENT)
+	draw_fn.call(img)
+	return ImageTexture.create_from_image(img)
 
 func _setup_ui():
 	# UI Spacer/Helper
@@ -54,7 +113,7 @@ func _setup_ui():
 	# vbox.add_child(shape_type_label)
 	
 	shape_type_option = OptionButton.new()
-	shape_type_option.add_item("CHOOSE a physics shape type to apply:", PhysicsBase.ShapeType.NONE)
+	shape_type_option.add_item("SELECT a physics shape type to apply:", PhysicsBase.ShapeType.NONE)
 	shape_type_option.add_item("Trimesh (Exact, but Slow)", PhysicsBase.ShapeType.TRIMESH)
 	shape_type_option.add_item("Convex (Optimized)", PhysicsBase.ShapeType.CONVEX)
 	shape_type_option.add_item("Box (Simple, Fastest)", PhysicsBase.ShapeType.BOX)
@@ -161,12 +220,14 @@ func _update_filtered_list():
 		var item_index = file_list.add_item(file_name)
 		file_list.set_item_metadata(item_index, file_path)
 		
-		# Check if it already has physics import script
-		if _has_physics_import_script(file_path):
-			file_list.set_item_icon(item_index, _icon_green)
-			file_list.set_item_tooltip(item_index, file_path + "\n✓ Physics import script applied")
+		# Show shape-specific icon if physics is applied
+		var shape_type := _get_file_physics_shape_type(file_path)
+		if shape_type != PhysicsBase.ShapeType.NONE and shape_type in _shape_icons:
+			file_list.set_item_icon(item_index, _shape_icons[shape_type])
+			var shape_name := _get_shape_name(shape_type)
+			file_list.set_item_tooltip(item_index, file_path + "\n✓ " + shape_name)
 		else:
-			file_list.set_item_icon(item_index, _icon_gray)
+			file_list.set_item_icon(item_index, _icon_none)
 			file_list.set_item_tooltip(item_index, file_path + "\n○ No physics import script")
 
 func _find_gltf_files(directory: String) -> Array:
@@ -225,6 +286,15 @@ func _get_file_physics_shape_type(file_path: String) -> int:
 		"SPHERE": return PhysicsBase.ShapeType.SPHERE
 		"CAPSULE": return PhysicsBase.ShapeType.CAPSULE
 		_: return PhysicsBase.ShapeType.NONE
+
+func _get_shape_name(shape_type: int) -> String:
+	match shape_type:
+		PhysicsBase.ShapeType.TRIMESH: return "Trimesh"
+		PhysicsBase.ShapeType.CONVEX: return "Convex"
+		PhysicsBase.ShapeType.BOX: return "Box"
+		PhysicsBase.ShapeType.SPHERE: return "Sphere"
+		PhysicsBase.ShapeType.CAPSULE: return "Capsule"
+		_: return "None"
 
 func _restore_selection(file_paths: Array) -> void:
 	for i in range(file_list.item_count):
