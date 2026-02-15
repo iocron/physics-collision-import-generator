@@ -15,11 +15,27 @@ var shape_type_option: OptionButton
 var shape_type_label: Label
 var search_filter: LineEdit
 var all_files: Array = []  # Store all found files for filtering
+var _icon_green: ImageTexture
+var _icon_gray: ImageTexture
 
 func _init():
 	name = "Collision Import Generator"
 	custom_minimum_size = Vector2(200, 500)  # Increased height only
+	_create_status_icons()
 	_setup_ui()
+
+func _create_status_icons():
+	for color in [Color.GREEN, Color.GRAY]:
+		var img = Image.create(12, 12, false, Image.FORMAT_RGBA8)
+		img.fill(Color.TRANSPARENT)
+		for x in range(2, 10):
+			for y in range(2, 10):
+				img.set_pixel(x, y, color)
+		var tex = ImageTexture.create_from_image(img)
+		if color == Color.GREEN:
+			_icon_green = tex
+		else:
+			_icon_gray = tex
 
 func _setup_ui():
 	# Create vertical layout
@@ -65,7 +81,7 @@ func _setup_ui():
 	vbox.add_child(shape_type_label)
 	
 	shape_type_option = OptionButton.new()
-	shape_type_option.add_item("", PhysicsBase.ShapeType.NONE)
+	shape_type_option.add_item("CHOOSE:", PhysicsBase.ShapeType.NONE)
 	shape_type_option.add_item("Trimesh (Exact, but Slow)", PhysicsBase.ShapeType.TRIMESH)
 	shape_type_option.add_item("Convex (Optimized)", PhysicsBase.ShapeType.CONVEX)
 	shape_type_option.add_item("Box (Simple, Fastest)", PhysicsBase.ShapeType.BOX)
@@ -90,7 +106,7 @@ func _setup_ui():
 	hbox1.add_child(refresh_button)
 	
 	remove_button = Button.new()
-	remove_button.text = "Remove Physics"
+	remove_button.text = "Remove Physics (selected)"
 	remove_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	remove_button.pressed.connect(_on_remove_physics_pressed)
 	remove_button.disabled = true
@@ -101,7 +117,7 @@ func _setup_ui():
 	vbox.add_child(hbox2)
 
 	apply_button = Button.new()
-	apply_button.text = "Apply (Selected)"
+	apply_button.text = "Apply Physics (selected)"
 	apply_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	apply_button.pressed.connect(_on_apply_physics_pressed)
 	apply_button.disabled = true
@@ -116,11 +132,12 @@ func _setup_ui():
 	file_list = ItemList.new()
 	file_list.custom_minimum_size = Vector2(0, 200)
 	file_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	file_list.select_mode = ItemList.SELECT_MULTI
 	file_list.allow_reselect = true
 	file_list.auto_height = false # Set to false to allow scrolling in the dock
 	vbox.add_child(file_list)
-	
-	file_list.item_selected.connect(_on_file_selected)
+
+	file_list.multi_selected.connect(_on_multi_selected)
 	call_deferred("_refresh_file_list")
 
 func _refresh_file_list():
@@ -149,10 +166,10 @@ func _update_filtered_list():
 		
 		# Check if it already has physics import script
 		if _has_physics_import_script(file_path):
-			file_list.set_item_custom_fg_color(item_index, Color.GREEN)
+			file_list.set_item_icon(item_index, _icon_green)
 			file_list.set_item_tooltip(item_index, file_path + "\n✓ Physics import script applied")
 		else:
-			file_list.set_item_custom_fg_color(item_index, Color.WHITE)
+			file_list.set_item_icon(item_index, _icon_gray)
 			file_list.set_item_tooltip(item_index, file_path + "\n○ No physics import script")
 
 func _find_gltf_files(directory: String) -> Array:
@@ -218,7 +235,7 @@ func _restore_selection(file_paths: Array) -> void:
 			file_list.select(i, false)
 	var selected = file_list.get_selected_items()
 	if selected.size() > 0:
-		_on_file_selected(selected[0])
+		_on_multi_selected(selected[0], true)
 
 func _on_refresh_pressed():
 	_refresh_file_list()
@@ -232,10 +249,10 @@ func _on_clear_search_pressed():
 	search_filter.text = ""
 	_update_filtered_list()
 
-func _on_file_selected(_index: int) -> void:
-	apply_button.disabled = false
-	remove_button.disabled = false
+func _on_multi_selected(_index: int, _selected: bool) -> void:
 	var selected_items := file_list.get_selected_items()
+	apply_button.disabled = selected_items.is_empty()
+	remove_button.disabled = selected_items.is_empty()
 	if selected_items.size() == 1:
 		var shape_type := _get_file_physics_shape_type(file_list.get_item_metadata(selected_items[0]))
 		shape_type_option.selected = shape_type_option.get_item_index(shape_type) if shape_type != PhysicsBase.ShapeType.NONE else 0
