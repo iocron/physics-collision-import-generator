@@ -127,12 +127,6 @@ func _setup_ui():
 	var hbox1 = HBoxContainer.new()
 	vbox.add_child(hbox1)
 	
-	refresh_button = Button.new()
-	refresh_button.text = "Refresh List"
-	refresh_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	refresh_button.pressed.connect(_on_refresh_pressed)
-	hbox1.add_child(refresh_button)
-	
 	remove_button = Button.new()
 	remove_button.text = "Remove Physics (selected)"
 	remove_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -184,6 +178,21 @@ func _setup_ui():
 	clear_button.tooltip_text = "Clear search"
 	clear_button.pressed.connect(_on_clear_search_pressed)
 	search_container.add_child(clear_button)
+
+	# Refresh button (icon loaded from editor theme)
+	refresh_button = Button.new()
+	refresh_button.custom_minimum_size = Vector2(24, 24)
+	refresh_button.tooltip_text = "Refresh file list"
+	refresh_button.pressed.connect(_on_refresh_pressed)
+	search_container.add_child(refresh_button)
+	# Defer icon load until the button is in the scene tree
+	refresh_button.ready.connect(func():
+		var icon = refresh_button.get_theme_icon("Reload", "EditorIcons")
+		if icon:
+			refresh_button.icon = icon
+		else:
+			refresh_button.text = "↻"
+	)
 
 	file_list = ItemList.new()
 	file_list.custom_minimum_size = Vector2(0, 200)
