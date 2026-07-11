@@ -409,15 +409,16 @@ func _apply_to_paths(paths: Array):
 	var shape_type = shape_type_option.get_selected_id()
 	
 	for path in paths:
+		if not path or typeof(path) != TYPE_STRING:
+			continue
+			
 		if shape_type != PhysicsBase.ShapeType.NONE:
 			plugin_reference.set_physics_import_script(path, shape_type)
 		else:
 			plugin_reference.remove_physics_import_script(path)
 	
-	# Wait a bit for import to complete, then refresh
 	await get_tree().create_timer(0.5).timeout
 	_update_filtered_list()
-	# Restore selection by finding the file paths in the refreshed list
 	_restore_selection(paths)
 
 func _on_remove_physics_pressed():
