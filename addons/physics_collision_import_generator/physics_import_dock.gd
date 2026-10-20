@@ -390,7 +390,10 @@ func _on_apply_physics_pressed():
 func _on_apply_to_all_pressed():
 	var paths = []
 	for i in range(file_list.item_count):
-		paths.append(file_list.get_item_metadata(i))
+		# Folder header items have no metadata
+		var path = file_list.get_item_metadata(i)
+		if path is String:
+			paths.append(path)
 	if paths.is_empty():
 		return
 	var shape_name = shape_type_option.get_item_text(shape_type_option.selected)
@@ -409,16 +412,15 @@ func _apply_to_paths(paths: Array):
 	var shape_type = shape_type_option.get_selected_id()
 	
 	for path in paths:
-		if not path or typeof(path) != TYPE_STRING:
-			continue
-			
 		if shape_type != PhysicsBase.ShapeType.NONE:
 			plugin_reference.set_physics_import_script(path, shape_type)
 		else:
 			plugin_reference.remove_physics_import_script(path)
 	
+	# Wait a bit for import to complete, then refresh
 	await get_tree().create_timer(0.5).timeout
 	_update_filtered_list()
+	# Restore selection by finding the file paths in the refreshed list
 	_restore_selection(paths)
 
 func _on_remove_physics_pressed():
